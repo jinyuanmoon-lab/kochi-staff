@@ -211,13 +211,14 @@ button{-webkit-appearance:none;touch-action:manipulation}
 <div class="cd-strip" id="cd-strip"></div>
 <div id="banner-area"></div>
 <div class="stats-row">
-  <div class="stat"><div class="stat-n" id="s-total">0</div><div class="stat-l">今日品项</div></div>
+  <div class="stat"><div class="stat-n" id="s-total">0</div><div class="stat-l" id="s-total-lbl">我的任务</div></div>
   <div class="stat"><div class="stat-n" id="s-done">0</div><div class="stat-l">已盘点</div></div>
   <div class="stat"><div class="stat-n" id="s-pct">0%</div><div class="stat-l">完成率</div></div>
 </div>
 <div class="prog-wrap"><div class="prog-fill" id="prog" style="width:0%"></div></div>
 <div class="view-toggle" id="view-toggle">
-  <button type="button" class="vt-btn active" data-view="supplier">按供应商</button>
+  <button type="button" class="vt-btn active" data-view="mine">📋 我的任务</button>
+  <button type="button" class="vt-btn" data-view="supplier">按供应商</button>
   <button type="button" class="vt-btn" data-view="location">按位置</button>
   <button type="button" class="vt-btn" data-view="all">全部品项</button>
 </div>
@@ -256,7 +257,7 @@ const REASONS=['已售罄','剩余极少','损耗/变质','其他'];
 function p2(n){return String(n).padStart(2,'0')}
 
 let items=[],suppliers=[],staffList=[],currentStaff=null,bossFlags={};
-let curStore='wetter',curView='supplier',curSupId=null;
+let curStore='wetter',curView='mine',curSupId=null;
 let pinBuf='',selStaffId=null;
 const vals={},usel={};
 const emerSel={};
@@ -391,8 +392,43 @@ function isDueToday(item){
 function renderList(){
   const list=document.getElementById('list');list.innerHTML='';
   let totalShown=0,done=0;
+  const statLbl=document.getElementById('s-total-lbl');
+  if(statLbl)statLbl.textContent=curView==='mine'?'我的任务':curView==='all'?'全部品项':'今日品项';
 
-  if(curView==='location'){
+  if(curView==='mine'){
+    const myItems=items.filter(item=>(item.assignees||[]).includes(currentStaff&&currentStaff.id));
+    if(!myItems.length){
+      const d=document.createElement('div');
+      d.style.cssText='text-align:center;padding:40px 20px;color:#8e8e93';
+      d.innerHTML='<div style="font-size:40px;margin-bottom:10px">✅</div>'+
+        '<div style="font-size:15px;font-weight:600;color:#3c3c43;margin-bottom:6px">暂无分配给你的品项</div>'+
+        '<div style="font-size:13px">老板还未分配任务，可切换到「全部品项」查看</div>';
+      list.appendChild(d);
+    } else {
+      const byLoc={};
+      myItems.forEach(item=>{
+        const loc=item.loc||'办公室库房';
+        if(!byLoc[loc])byLoc[loc]=[];
+        byLoc[loc].push(item);
+      });
+      LOC_ORDER.forEach(loc=>{
+        const its=byLoc[loc];if(!its||!its.length)return;
+        const isDue=its.some(i=>isDueToday(i));
+        const hdr=document.createElement('div');hdr.className='sec-hdr';
+        hdr.innerHTML='<span class="loc-dot" style="background:'+(LOC_COLORS[loc]||'#8e8e93')+'"></span>'+loc+
+          ' <span style="color:#c7c7cc;font-size:10px">('+its.length+'项)</span>'+
+          (isDue?'<span style="margin-left:6px;font-size:10px;background:#edfbf1;color:#1c7c3e;border-radius:4px;padding:1px 5px;font-weight:700">今日</span>':'');
+        list.appendChild(hdr);
+        its.forEach(item=>{
+          totalShown++;
+          const sid=getSups(item)[0]||'';
+          const k=curStore+'|'+sid+'|'+item.zh;
+          if((vals[k]||'')!=='')done++;
+          appendCard(list,item,k);
+        });
+      });
+    }
+  } else if(curView==='location'){
     const byLoc={};
     items.forEach(item=>{
       const loc=item.loc||'办公室库房';
@@ -516,6 +552,9 @@ async function checkPin(){
   const s=staffList.find(x=>x.id===selStaffId);if(!s)return;
   if(pinBuf===s.pin){
     currentStaff=s;
+    curView='mine';
+    document.querySelectorAll('.vt-btn').forEach(x=>x.classList.toggle('active',x.dataset.view==='mine'));
+    document.getElementById('tabs-wrap').style.display='none';
     document.getElementById('lo').style.display='none';
     document.getElementById('user-name').textContent=s.name;
     document.getElementById('logout-btn').style.display='inline-block';
@@ -558,6 +597,7 @@ document.getElementById('view-toggle').addEventListener('click',e=>{
   document.querySelectorAll('.vt-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
   document.getElementById('tabs-wrap').style.display=curView==='supplier'?'block':'none';
   renderList();
+  window.scrollTo({top:0,behavior:'smooth'});
 });
 document.getElementById('view-toggle').addEventListener('touchend',e=>{
   const b=e.target.closest('.vt-btn');if(!b)return;e.preventDefault();b.click();
