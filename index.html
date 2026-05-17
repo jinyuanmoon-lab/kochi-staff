@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kochi 库存盘点</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,'PingFang SC',sans-serif;background:#f2f2f7;color:#1c1c1e;min-height:100vh}
+input,select,textarea{font-size:16px!important}
+button{-webkit-appearance:none;touch-action:manipulation}
+/* LOGIN */
+.lo{position:fixed;top:0;left:0;right:0;bottom:0;background:#1c1c1e;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.lo-brand{font-size:32px;font-weight:800;color:#fff;letter-spacing:2px;margin-bottom:4px}
+.lo-sub{font-size:13px;color:#ffffff66;margin-bottom:36px}
+.lo-card{background:#2c2c2e;border-radius:20px;padding:24px;width:100%;max-width:320px}
+.lo-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:16px;text-align:center}
+.staff-list{display:flex;flex-direction:column;gap:8px}
+.staff-btn{padding:14px 16px;background:#3a3a3c;border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:600;cursor:pointer;text-align:left;touch-action:manipulation;display:flex;align-items:center;justify-content:space-between;width:100%}
+.staff-btn:active{background:#5856d6}
+.pin-sec{display:none}.pin-sec.show{display:block}
+.pin-dots{display:flex;justify-content:center;gap:14px;margin:16px 0 20px}
+.pd{width:18px;height:18px;border-radius:50%;background:#3a3a3c;border:2px solid #555;transition:all 0.15s}
+.pd.on{background:#5856d6;border-color:#5856d6}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pp{padding:17px;background:#3a3a3c;border:none;border-radius:12px;color:#fff;font-size:24px;font-weight:600;cursor:pointer;text-align:center;touch-action:manipulation;width:100%}
+.pp:active{background:#5856d6}
+.pp.del{font-size:18px;color:#ff453a}
+.pp.emp{background:transparent;pointer-events:none}
+.pin-err{color:#ff453a;font-size:13px;text-align:center;margin-top:10px;min-height:18px}
+.lo-back{background:none;border:none;color:#ffffff55;font-size:13px;cursor:pointer;margin-top:14px;width:100%;text-align:center;touch-action:manipulation;padding:6px}
+/* TOPBAR */
+.topbar{background:#1c1c1e;padding:12px 16px 10px;position:sticky;top:0;z-index:100}
+.topbar-row{display:flex;justify-content:space-between;align-items:flex-start}
+.brand{font-size:13px;font-weight:700;color:#ffffffaa;letter-spacing:0.5px}
+.user-row{display:flex;align-items:center;gap:6px;margin-top:3px}
+.user-name{font-size:11px;color:#34c759;font-weight:600}
+.logout-btn{background:none;border:none;color:#ff453a;font-size:11px;cursor:pointer;padding:2px 4px;touch-action:manipulation}
+.clock-time{font-size:20px;font-weight:700;color:#fff;text-align:right;font-variant-numeric:tabular-nums}
+.clock-date{font-size:11px;color:#ffffff88;text-align:right;margin-top:1px}
+/* STORE */
+.store-wrap{background:#2c2c2e;padding:10px 16px}
+.store-label{font-size:11px;font-weight:700;color:#ffffff88;letter-spacing:0.5px;margin-bottom:6px}
+.store-btns{display:flex;gap:8px}
+.store-btn{flex:1;padding:10px;border-radius:12px;border:1.5px solid #3a3a3c;background:#3a3a3c;color:#ffffffaa;font-size:14px;font-weight:600;cursor:pointer;text-align:center;touch-action:manipulation}
+.store-btn.active{background:#5856d6;border-color:#5856d6;color:#fff}
+/* EMERGENCY */
+.emer-btn-wrap{background:#2c2c2e;padding:0 16px 12px}
+.emer-btn{width:100%;padding:12px;background:#ff3b30;color:#fff;font-size:14px;font-weight:700;border:none;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;touch-action:manipulation}
+.emer-page{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#f2f2f7;z-index:200;overflow-y:auto}
+.emer-page.show{display:block}
+.emer-top{background:#ff3b30;padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
+.emer-back-btn{background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:14px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;touch-action:manipulation}
+.emer-body{padding:16px}
+.emer-info{background:#fff0f0;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#c0392b;font-weight:500;border:1px solid #ffb3b3}
+.emer-sec{font-size:12px;font-weight:700;color:#8e8e93;letter-spacing:0.5px;text-transform:uppercase;margin:14px 0 8px}
+.emer-search-inp{width:100%;padding:10px 14px;border:1.5px solid #d1d1d6;border-radius:12px;font-size:16px;color:#1c1c1e;background:#fff;margin-bottom:12px}
+.emer-search-inp:focus{outline:none;border-color:#ff3b30}
+.emer-items-list{background:#fff;border-radius:12px;border:1px solid #e5e5ea;overflow:hidden;max-height:220px;overflow-y:auto}
+.emer-item{padding:11px 14px;border-bottom:1px solid #f5f5f7;cursor:pointer;display:flex;justify-content:space-between;align-items:center;touch-action:manipulation}
+.emer-item:last-child{border-bottom:none}
+.emer-item.selected{background:#fff0f0}
+.emer-item-zh{font-size:14px;font-weight:600;color:#1c1c1e}
+.emer-item-de{font-size:11px;color:#8e8e93;margin-top:1px}
+.emer-item-sup{font-size:10px;font-weight:600;padding:2px 6px;border-radius:5px;background:#fff0f0;color:#c00;flex-shrink:0;margin-left:8px}
+.emer-empty-txt{text-align:center;padding:20px;color:#8e8e93;font-size:13px}
+.sel-items{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.sel-card{background:#fff;border-radius:12px;border:1.5px solid #ffb3b3;padding:12px 14px}
+.sel-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.sel-zh{font-size:14px;font-weight:600;color:#1c1c1e}
+.sel-remove{background:#ff3b30;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer;touch-action:manipulation}
+.sel-row{display:flex;gap:8px;align-items:center;margin-top:6px}
+.sel-lbl{font-size:12px;color:#8e8e93;white-space:nowrap}
+.sel-reason{flex:1;padding:7px 10px;border:1.5px solid #d1d1d6;border-radius:8px;font-size:14px;color:#1c1c1e;background:#f9f9f9}
+.sel-note{width:100%;padding:7px 10px;border:1.5px solid #d1d1d6;border-radius:8px;font-size:14px;color:#1c1c1e;background:#f9f9f9;margin-top:6px;resize:none}
+.emer-submit{width:100%;padding:15px;background:#ff3b30;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:14px;cursor:pointer;margin-top:8px;touch-action:manipulation}
+.emer-result{background:#fff0f0;border-radius:12px;border:1.5px solid #ffb3b3;padding:14px;margin-top:14px;display:none}
+.emer-result.show{display:block}
+.emer-result-box{font-size:13px;color:#3c3c43;white-space:pre-wrap;line-height:1.6;max-height:200px;overflow-y:auto}
+.emer-copy{width:100%;padding:11px;background:#ff3b30;color:#fff;font-size:14px;font-weight:700;border:none;border-radius:10px;cursor:pointer;margin-top:10px;touch-action:manipulation}
+/* TODAY */
+.today-bar{background:#1c1c1e;padding:8px 16px 12px}
+.today-lbl{font-size:11px;font-weight:700;color:#ffffff88;letter-spacing:0.5px;margin-bottom:6px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:5px 10px;border-radius:10px;font-size:12px;font-weight:600;touch-action:manipulation}
+.chip.urgent{background:#ff3b30;color:#fff}
+.chip.warn{background:#ff9500;color:#fff}
+.chip.info{background:#5856d6;color:#fff}
+.chip.muted{background:#3a3a3c;color:#ffffff66}
+/* COUNTDOWN */
+.cd-strip{background:#2c2c2e;padding:8px 12px;display:flex;gap:8px;overflow-x:auto}
+.cd-strip::-webkit-scrollbar{display:none}
+.cd-card{flex-shrink:0;background:#3a3a3c;border-radius:10px;padding:7px 12px;min-width:110px}
+.cd-name{font-size:10px;font-weight:700;color:#ffffff88}
+.cd-dl{font-size:10px;color:#fff;margin-top:1px}
+.cd-ct{font-size:13px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.cd-ct.red{color:#ff453a}.cd-ct.orange{color:#ff9f0a}.cd-ct.green{color:#30d158}
+/* BANNER */
+.banner{margin:10px 16px;border-radius:12px;padding:11px 14px;font-size:13px;font-weight:600;display:none}
+.banner.show{display:block}
+.banner.urgent{background:#fff0f0;color:#c0392b;border:1.5px solid #ffb3b3}
+.banner-ttl{font-size:14px;font-weight:700;margin-bottom:3px}
+/* STATS */
+.stats-row{display:flex;gap:8px;padding:10px 16px;background:#fff;border-bottom:1px solid #e5e5ea}
+.stat{flex:1;background:#f2f2f7;border-radius:10px;padding:8px 6px;text-align:center}
+.stat-n{font-size:22px;font-weight:700;color:#1c1c1e}
+.stat-l{font-size:11px;color:#8e8e93;margin-top:2px}
+.prog-wrap{height:4px;background:#e5e5ea}
+.prog-fill{height:4px;background:#5856d6;transition:width 0.3s}
+/* VIEW TOGGLE */
+.view-toggle{display:flex;gap:6px;padding:10px 16px;background:#fff;border-bottom:1px solid #e5e5ea;overflow-x:auto}
+.view-toggle::-webkit-scrollbar{display:none}
+.vt-btn{flex-shrink:0;padding:6px 14px;border-radius:16px;font-size:12px;font-weight:600;border:1px solid #d1d1d6;background:#f2f2f7;color:#3c3c43;cursor:pointer;touch-action:manipulation;white-space:nowrap}
+.vt-btn.active{background:#5856d6;border-color:#5856d6;color:#fff}
+/* TABS */
+.tabs-wrap{background:#fff;border-bottom:1px solid #e5e5ea;padding:0 12px;overflow-x:auto;white-space:nowrap}
+.tabs-wrap::-webkit-scrollbar{display:none}
+.tabs-inner{display:inline-flex;gap:4px;padding:8px 0}
+.tab{display:inline-flex;flex-direction:column;align-items:center;padding:6px 14px;border-radius:12px;font-size:12px;font-weight:600;color:#3c3c43;background:#f2f2f7;border:none;cursor:pointer;white-space:nowrap;gap:1px;touch-action:manipulation}
+.tab.active{background:#5856d6;color:#fff}
+.tab-sub{font-size:10px;font-weight:500;opacity:0.7}
+.tab.urgent{background:#fff0f0;color:#c00;border:1.5px solid #ffb3b3}
+.tab.urgent.active{background:#ff3b30;color:#fff;border-color:#ff3b30}
+/* ITEMS */
+.sec-hdr{padding:12px 16px 5px;font-size:11px;font-weight:700;color:#8e8e93;letter-spacing:0.5px;text-transform:uppercase;background:#f2f2f7;display:flex;align-items:center;gap:6px}
+.loc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.item-card{background:#fff;border-bottom:1px solid #f2f2f7;display:flex;align-items:center;padding:12px 14px;gap:10px;min-height:64px}
+.item-card.done .item-zh{color:#8e8e93}
+.chk{width:22px;height:22px;border-radius:50%;border:2px solid #d1d1d6;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.chk.on{background:#34c759;border-color:#34c759}
+.chk.on::after{content:'';width:6px;height:10px;border:2.5px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translateY(-1px);display:block}
+.item-info{flex:1;min-width:0}
+.item-zh{font-size:15px;font-weight:600;color:#1c1c1e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item-de{font-size:11px;color:#8e8e93;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+.boss-tag{display:inline-block;background:#fff8ee;color:#a05000;border:1px solid #ffd8a0;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;margin-left:5px}
+.qty-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.qty-inp{width:70px;text-align:center;font-size:16px!important;font-weight:600;color:#1c1c1e;padding:6px;border:1.5px solid #d1d1d6;border-radius:10px;background:#f2f2f7;touch-action:manipulation}
+.qty-inp:focus{outline:none;border-color:#5856d6;background:#eeeeff}
+.qty-inp.filled{border-color:#34c759;background:#edfbf1;color:#1c7c3e}
+.unit-sel{font-size:14px;padding:4px 6px;border:1.5px solid #d1d1d6;border-radius:8px;background:#f2f2f7;color:#1c1c1e;touch-action:manipulation;max-width:80px}
+.unit-sel.filled{border-color:#34c759;background:#edfbf1;color:#1c7c3e}
+/* SUBMIT */
+.submit-area{padding:16px}
+.submit-btn{width:100%;padding:15px;background:#5856d6;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:14px;cursor:pointer;touch-action:manipulation}
+.result-panel{display:none;padding:16px;background:#fff}
+.result-panel.show{display:block}
+.result-ttl{font-size:16px;font-weight:700;color:#1c1c1e;margin-bottom:6px}
+.result-sub{font-size:13px;color:#8e8e93;margin-bottom:10px}
+.result-box{background:#f2f2f7;border-radius:12px;padding:12px 14px;font-size:13px;color:#3c3c43;white-space:pre-wrap;line-height:1.6;max-height:280px;overflow-y:auto}
+.copy-btn{margin-top:10px;width:100%;padding:12px;background:#f2f2f7;color:#5856d6;font-size:14px;font-weight:700;border:none;border-radius:10px;cursor:pointer;touch-action:manipulation}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.78);color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;font-weight:500;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<!-- LOGIN -->
+<div class="lo" id="lo">
+  <div class="lo-brand">KOCHI</div>
+  <div class="lo-sub">Restaurant · Düsseldorf</div>
+  <div class="lo-card">
+    <div id="lo-step1"><div class="lo-title">选择你的账号</div><div class="staff-list" id="staff-list"></div></div>
+    <div id="lo-step2" style="display:none">
+      <div class="lo-title" id="pin-greet">输入PIN码</div>
+      <div class="pin-dots"><div class="pd" id="pd0"></div><div class="pd" id="pd1"></div><div class="pd" id="pd2"></div><div class="pd" id="pd3"></div></div>
+      <div class="pin-pad">
+        <button type="button" class="pp" data-n="1">1</button><button type="button" class="pp" data-n="2">2</button><button type="button" class="pp" data-n="3">3</button>
+        <button type="button" class="pp" data-n="4">4</button><button type="button" class="pp" data-n="5">5</button><button type="button" class="pp" data-n="6">6</button>
+        <button type="button" class="pp" data-n="7">7</button><button type="button" class="pp" data-n="8">8</button><button type="button" class="pp" data-n="9">9</button>
+        <button type="button" class="pp emp"></button><button type="button" class="pp" data-n="0">0</button><button type="button" class="pp del" id="pin-del">⌫</button>
+      </div>
+      <div class="pin-err" id="pin-err"></div>
+      <button type="button" class="lo-back" id="lo-back">← 重新选择账号</button>
+    </div>
+  </div>
+</div>
+<!-- MAIN -->
+<div class="topbar">
+  <div class="topbar-row">
+    <div><div class="brand">KOCHI RESTAURANT</div><div class="user-row"><span class="user-name" id="user-name"></span><button type="button" class="logout-btn" id="logout-btn" style="display:none">退出</button></div></div>
+    <div><div class="clock-time" id="clk">--:--</div><div class="clock-date" id="clk-date">--</div></div>
+  </div>
+</div>
+<div class="store-wrap">
+  <div class="store-label">选择门店 · Store</div>
+  <div class="store-btns">
+    <button type="button" class="store-btn active" id="btn-wetter">Kochi Wetter</button>
+    <button type="button" class="store-btn" id="btn-bismarck">Kochi Bismarck</button>
+  </div>
+</div>
+<div class="emer-btn-wrap"><button type="button" class="emer-btn" id="emer-open">🚨 库存告急上报</button></div>
+<!-- EMERGENCY PAGE -->
+<div class="emer-page" id="emer-page">
+  <div class="emer-top"><button type="button" class="emer-back-btn" id="emer-back">← 返回</button><span style="font-size:16px;font-weight:700;color:#fff">🚨 库存告急上报</span></div>
+  <div class="emer-body">
+    <div class="emer-info">用于紧急情况：某品项今天售罄或明天不够用，需要老板立即安排补货。</div>
+    <div class="emer-sec">搜索品项</div>
+    <input type="text" class="emer-search-inp" id="emer-search" placeholder="输入中文名搜索，例：和牛、炸油…">
+    <div class="emer-items-list" id="emer-items-list"><div class="emer-empty-txt">输入关键词搜索品项</div></div>
+    <div class="emer-sec" id="emer-sel-sec" style="display:none">已选品项</div>
+    <div class="sel-items" id="sel-items"></div>
+    <button type="button" class="emer-submit" id="emer-submit" disabled>提交告急报告</button>
+    <div class="emer-result" id="emer-result">
+      <div style="font-size:14px;font-weight:700;color:#c0392b;margin-bottom:8px">✅ 告急已上报</div>
+      <div class="emer-result-box" id="emer-result-box"></div>
+      <button type="button" class="emer-copy" id="emer-copy">复制内容</button>
+    </div>
+  </div>
+</div>
+<div class="today-bar"><div class="today-lbl">今日任务</div><div class="chips" id="chips"></div></div>
+<div class="cd-strip" id="cd-strip"></div>
+<div id="banner-area"></div>
+<div class="stats-row">
+  <div class="stat"><div class="stat-n" id="s-total">0</div><div class="stat-l">今日品项</div></div>
+  <div class="stat"><div class="stat-n" id="s-done">0</div><div class="stat-l">已盘点</div></div>
+  <div class="stat"><div class="stat-n" id="s-pct">0%</div><div class="stat-l">完成率</div></div>
+</div>
+<div class="prog-wrap"><div class="prog-fill" id="prog" style="width:0%"></div></div>
+<div class="view-toggle" id="view-toggle">
+  <button type="button" class="vt-btn active" data-view="supplier">按供应商</button>
+  <button type="button" class="vt-btn" data-view="location">按位置</button>
+  <button type="button" class="vt-btn" data-view="all">全部品项</button>
+</div>
+<div class="tabs-wrap" id="tabs-wrap"><div class="tabs-inner" id="tabs"></div></div>
+<div id="list"></div>
+<div class="submit-area"><button type="button" class="submit-btn" id="submit-btn">✓ 提交盘点结果</button></div>
+<div class="result-panel" id="result-panel">
+  <div class="result-ttl">✅ 提交成功</div>
+  <div class="result-sub">数据已保存，老板端可查看。</div>
+  <div class="result-box" id="result-box"></div>
+  <button type="button" class="copy-btn" id="copy-btn">复制内容</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL='https://vadehcocwrjsbqvssqkk.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhZGVoY29jd3Jqc2JxdnNzcWtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NTE4MjUsImV4cCI6MjA5NDQyNzgyNX0.xfPAuO6qMNYe7Z2R2nDOKmW5OHIfWTpcPcz8EQMiGdM';
+async function sbGet(k){try{const r=await fetch(SB_URL+'/rest/v1/inventory?key=eq.'+encodeURIComponent(k)+'&select=value',{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});const d=await r.json();if(d&&d.length>0)return{value:d[0].value};return null;}catch(e){return null;}}
+async function sbSet(k,v){try{const val=typeof v==='string'?v:JSON.stringify(v);await fetch(SB_URL+'/rest/v1/inventory',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify({key:k,value:val,updated_at:new Date().toISOString()})});return true;}catch(e){return false;}}
+
+const KEYS={items:'kochi_items_v3',suppliers:'kochi_suppliers_v1',staff:'kochi_staff_v1',log:'kochi_login_log_v1',emer:'kochi_emergency_v1',flags:'kochi_boss_flags_v1'};
+const WDF=['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+const MM=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+const WD=['周日','周一','周二','周三','周四','周五','周六'];
+const LOC_COLORS={"熟成柜": "#ff9500", "蔬菜冷藏房": "#34c759", "地下冷冻房": "#007aff", "厨房小房间": "#ff3b30", "办公室库房": "#af52de"};
+const LOC_ORDER=["熟成柜", "蔬菜冷藏房", "地下冷冻房", "厨房小房间", "办公室库房"];
+const FREQ_OPTIONS=[{"id": "every_day", "label": "每天", "days": 1}, {"id": "every_2days", "label": "每2天", "days": 2}, {"id": "every_3days", "label": "每3天", "days": 3}, {"id": "every_week_1", "label": "每周（周一）", "weekdays": [1]}, {"id": "every_week_14", "label": "每周（周一+周四）", "weekdays": [1, 4]}, {"id": "every_2weeks", "label": "每两周", "days": 14}];
+const DEFAULT_ITEMS=[{"zh": "和牛A5 上脑", "de": "Wagyu JPN A5 Top Blade · 792300", "units": ["KG", "克(g)"], "loc": "熟成柜", "freq": "every_week_14", "sup": "sup_albers", "cat": "和牛 Wagyu A5/F1"}, {"zh": "和牛A5 西冷", "de": "Wagyu Kagosh. A5 Roastbeef Striploin · 835000", "units": ["KG", "克(g)"], "loc": "熟成柜", "freq": "every_week_14", "sup": "sup_albers", "cat": "和牛 Wagyu A5/F1"}, {"zh": "和牛A5 肋眼", "de": "Wagyu Kagosh. A5 Entrecote Rib Eye · 835200", "units": ["KG", "克(g)"], "loc": "熟成柜", "freq": "every_week_14", "sup": "sup_albers", "cat": "和牛 Wagyu A5/F1"}, {"zh": "和牛A5 北海道菲力", "de": "Wagyu Hokkaido A5 Filet · 805400", "units": ["KG", "克(g)"], "loc": "熟成柜", "freq": "every_week_14", "sup": "sup_albers", "cat": "和牛 Wagyu A5/F1"}, {"zh": "和牛F1 板腱", "de": "Wagyu F1 Unterschale Outside Flat · 868550", "units": ["KG", "克(g)"], "loc": "熟成柜", "freq": "every_week_14", "sup": "sup_albers", "cat": "和牛 Wagyu A5/F1"}, {"zh": "和牛F1 脖卷", "de": "Wagyu F1 Neck Roll · 867850", "units": ["KG", "克(g)"], "loc": "熟成柜", "freq": "every_week_14", "sup": "sup_albers", "cat": "和牛 Wagyu A5/F1"}, {"zh": "和牛F1 肋排", "de": "Wagyu F1 oK Rib Short Rib · 868250", "units": ["KG", "克(g)"], "loc": "熟成柜", "freq": "every_week_14", "sup": "sup_albers", "cat": "和牛 Wagyu A5/F1"}, {"zh": "美国 牛腩", "de": "Rind-US-GOP Chuck Flap · 900300", "units": ["KG", "克(g)"], "loc": "熟成柜", "freq": "every_week_14", "sup": "sup_albers", "cat": "牛肉 Rindfleisch"}, {"zh": "爱尔兰 肋眼卷", "de": "Rind-IRL-JS Entrecote Ribeye Roll · 896600", "units": ["KG", "克(g)"], "loc": "熟成柜", "freq": "every_week_14", "sup": "sup_albers", "cat": "牛肉 Rindfleisch"}, {"zh": "澳洲 牛腩", "de": "Rind-AUS-BA Flank Steak MS 2-3 · 854500", "units": ["KG", "克(g)"], "loc": "熟成柜", "freq": "every_week_14", "sup": "sup_albers", "cat": "牛肉 Rindfleisch"}, {"zh": "鸡腿排", "de": "KIKOK Hähn-Keulensteak 2,0 ATM · 500199", "units": ["KG", "克(g)"], "loc": "熟成柜", "freq": "every_week_14", "sup": "sup_albers", "cat": "其他肉类"}, {"zh": "伊比利亚猪秘密部位", "de": "Schwein-IBERICO Secreto TK · 912906", "units": ["KG", "克(g)"], "loc": "熟成柜", "freq": "every_week_14", "sup": "sup_albers", "cat": "其他肉类"}, {"zh": "爱尔兰 西冷", "de": "Rind-IRL-JS Roastbeef Mitte Striploin · 896480", "units": ["KG", "克(g)"], "loc": "熟成柜", "freq": "every_week_14", "sup": "sup_albers", "cat": "其他肉类"}, {"zh": "大虾（Albers）", "de": "Riesengarnelen Rote Garnele Wildfang ARG · 9365", "units": ["KG", "克(g)"], "loc": "地下冷冻房", "freq": "every_week_14", "sup": "sup_albers", "cat": "其他肉类"}, {"zh": "牛肉腌料", "de": "Rindfleischmarinade 소불고기양념 · K-015112", "units": ["KG", "袋", "箱"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_kims", "cat": "酱料腌料"}, {"zh": "辣椒炸鸡酱", "de": "Chilipastesauce Fried Chicken · K-015226", "units": ["箱", "瓶"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_kims", "cat": "酱料腌料"}, {"zh": "酱油炸鸡酱", "de": "Sojasoßensauce Fried Chicken · K-015225", "units": ["箱", "瓶"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_kims", "cat": "酱料腌料"}, {"zh": "泡菜（切块）", "de": "Geschnittenes Kimchi CJ Bibigo · XC-26001R", "units": ["箱", "KG"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_kims", "cat": "酱料腌料"}, {"zh": "冷面面条", "de": "Naengmyeon Pfeilwurz 칡냉면사리 · VH-20030", "units": ["箱", "KG"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_kims", "cat": "面食"}, {"zh": "粉丝", "de": "Glasnudeln Otoki 당면 · O-0313", "units": ["箱", "KG"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_kims", "cat": "面食"}, {"zh": "柚子茶", "de": "Yuzutee 유자차 · RG-10294K", "units": ["箱", "瓶"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_kims", "cat": "面食"}, {"zh": "烤肉饺子", "de": "Galbi Gyoza Mandu 비비고갈비만두 · VH-10363", "units": ["箱", "袋"], "loc": "地下冷冻房", "freq": "every_week_1", "sup": "sup_kims", "cat": "饺子"}, {"zh": "泡菜饺子", "de": "Kimchi-Teigtaschen 맛사랑김치손만두 · VH-10006", "units": ["箱", "袋"], "loc": "地下冷冻房", "freq": "every_week_1", "sup": "sup_kims", "cat": "饺子"}, {"zh": "蔬菜饺子", "de": "Handgemachte Gemüsemandu 야채손만두 · VH-10005", "units": ["箱", "袋"], "loc": "地下冷冻房", "freq": "every_week_1", "sup": "sup_kims", "cat": "饺子"}, {"zh": "杂菜饺子", "de": "Vegane Japchae Mandu 비비고잡채만두 · VH-10390", "units": ["箱", "袋"], "loc": "地下冷冻房", "freq": "every_week_1", "sup": "sup_kims", "cat": "饺子"}, {"zh": "烤肉煎饺", "de": "Bulgogi Gyoza Mandu 불고기교자만두 · VH-10371", "units": ["箱", "袋"], "loc": "地下冷冻房", "freq": "every_week_1", "sup": "sup_kims", "cat": "饺子"}, {"zh": "豆腐（嫩）", "de": "Tofu soft Matsarang · XC-15300", "units": ["箱", "块"], "loc": "蔬菜冷藏房", "freq": "every_week_1", "sup": "sup_kims", "cat": "豆腐海藻"}, {"zh": "豆腐（硬）", "de": "Tofu fest CJ Bibigo · XC-15301", "units": ["箱", "块"], "loc": "蔬菜冷藏房", "freq": "every_week_1", "sup": "sup_kims", "cat": "豆腐海藻"}, {"zh": "干海带", "de": "Getrockneter Seetang 청정미역 · K-05120", "units": ["箱", "包"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_kims", "cat": "豆腐海藻"}, {"zh": "切丝海带", "de": "Geschnittener Seetang 자른미역 · K-051203", "units": ["箱", "包"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_kims", "cat": "豆腐海藻"}, {"zh": "调味海苔", "de": "Gewürzte Seetangflocken 김자반 · C-140015", "units": ["箱", "包"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_kims", "cat": "豆腐海藻"}, {"zh": "煮萝卜叶（罐）", "de": "Gekochte Radieschenblätter 시레기 · K-01602", "units": ["箱", "罐"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_kims", "cat": "豆腐海藻"}, {"zh": "地瓜鲷鱼烧", "de": "Fischformgebäck Süßkartoffelfüllung · VW-6511", "units": ["箱", "袋"], "loc": "地下冷冻房", "freq": "every_week_1", "sup": "sup_kims", "cat": "甜品冻品"}, {"zh": "红豆鲷鱼烧", "de": "Fischformgebäck Bohnenpaste · VW-6510", "units": ["箱", "袋"], "loc": "地下冷冻房", "freq": "every_week_1", "sup": "sup_kims", "cat": "甜品冻品"}, {"zh": "炸地瓜片（冻）", "de": "Süßkartoffelscheiben vorfrittiert · VH-81146", "units": ["箱", "KG"], "loc": "地下冷冻房", "freq": "every_week_1", "sup": "sup_kims", "cat": "甜品冻品"}, {"zh": "美乐那雪糕", "de": "Melona Bar 메로나바 Binggrae · VH-4001", "units": ["箱", "支"], "loc": "地下冷冻房", "freq": "every_week_1", "sup": "sup_kims", "cat": "甜品冻品"}, {"zh": "地瓜薯片", "de": "Süßkartoffelsnack 고구마깡 · K-02116", "units": ["箱", "包"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_kims", "cat": "甜品冻品"}, {"zh": "辛拉面炒面", "de": "Shin Ramyun Braten 신라면볶음면 · K-010022", "units": ["箱", "包"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_kims", "cat": "甜品冻品"}, {"zh": "韩国梨", "de": "Koreanische Nashi-Birne Singo 신고배 · X-2012-8", "units": ["箱", "个"], "loc": "蔬菜冷藏房", "freq": "every_week_1", "sup": "sup_kims", "cat": "甜品冻品"}, {"zh": "真露烧酒（原味）", "de": "Chamisul Soju Original 20.1% · B-001", "units": ["箱", "瓶"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_kims", "cat": "酒水"}, {"zh": "真露烧酒（青葡萄）", "de": "Chamisul Soju Grüne Traube 13% · B-012", "units": ["箱", "瓶"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_kims", "cat": "酒水"}, {"zh": "真露烧酒（葡萄柚）", "de": "Chamisul Soju Grapefruit 13% · B-011", "units": ["箱", "瓶"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_kims", "cat": "酒水"}, {"zh": "真露烧酒（草莓）", "de": "Chamisul Soju Erdbeere 13% · B-014", "units": ["箱", "瓶"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_kims", "cat": "酒水"}, {"zh": "顺和里烧酒（蓝莓）", "de": "Soonhari Soju Heidelbeere 12% · B-12005B", "units": ["箱", "瓶"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_kims", "cat": "酒水"}, {"zh": "米酒", "de": "Reiswein Rice Wine 6% · B-01009", "units": ["箱", "瓶"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_kims", "cat": "酒水"}, {"zh": "卡斯啤酒", "de": "Cass Bier 4,5% OB · B-01041R", "units": ["箱", "瓶"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_kims", "cat": "酒水"}, {"zh": "棉手套（普通）", "de": "Baumwollhandschuhe 10Stk · RG-12306K", "units": ["箱", "双"], "loc": "厨房小房间", "freq": "every_2weeks", "sup": "sup_kims", "cat": "其他"}, {"zh": "棉手套（涂胶）", "de": "Beschichtete Baumwollhandschuhe · RG-12304K", "units": ["箱", "双"], "loc": "厨房小房间", "freq": "every_2weeks", "sup": "sup_kims", "cat": "其他"}, {"zh": "金针菇", "de": "Enoki-Pilze (金针菇)", "units": ["KG", "袋"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_china1", "cat": "新鲜蔬菜"}, {"zh": "绿豆芽", "de": "Mungobohnensprossen grün (绿豆芽)", "units": ["KG", "袋"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_china1", "cat": "新鲜蔬菜"}, {"zh": "黄豆芽", "de": "Sojabohnensprossen gelb (黄豆芽)", "units": ["KG", "袋"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_china1", "cat": "新鲜蔬菜"}, {"zh": "蒜薹", "de": "Knoblauchstängel (蒜薹)", "units": ["KG", "把"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_china1", "cat": "新鲜蔬菜"}, {"zh": "香菜", "de": "Koriander (香菜)", "units": ["KG", "把"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_china1", "cat": "新鲜蔬菜"}, {"zh": "小米辣", "de": "Kleine rote Chilischoten (小米辣)", "units": ["KG", "克(g)"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_china1", "cat": "新鲜蔬菜"}, {"zh": "去皮蒜", "de": "Geschälter Knoblauch (去皮蒜)", "units": ["KG", "克(g)"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_china1", "cat": "新鲜蔬菜"}, {"zh": "豆腐（中国）", "de": "Tofu (豆腐)", "units": ["块", "KG"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_china1", "cat": "豆腐"}, {"zh": "东古酱油", "de": "Donggu Sojasoße (东古酱油)", "units": ["瓶", "箱"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_china2", "cat": "酱料"}, {"zh": "味极鲜酱油", "de": "Weijixian Sojasoße (味极鲜)", "units": ["瓶", "箱"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_china2", "cat": "酱料"}, {"zh": "豆瓣酱", "de": "Doubanjiang Bohnenpaste (豆瓣酱)", "units": ["KG", "瓶"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_china2", "cat": "酱料"}, {"zh": "火锅底料", "de": "Hotpot-Gewürzbasis (火锅底料)", "units": ["包", "KG"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_china2", "cat": "酱料"}, {"zh": "南乳汁", "de": "Rote Fermentierte Bohnenpaste (南乳)", "units": ["瓶", "箱"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_china2", "cat": "酱料"}, {"zh": "叉烧酱", "de": "Char Siu Sauce (叉烧酱)", "units": ["瓶", "箱"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_china2", "cat": "酱料"}, {"zh": "猪颈肉", "de": "QS SW-Nacken o.Kn.vac. · 000909.2", "units": ["KG", "克(g)"], "loc": "地下冷冻房", "freq": "every_week_14", "sup": "sup_metro", "cat": "肉类"}, {"zh": "猪五花", "de": "QS SW-Lachse vac. · 000951.4", "units": ["KG", "克(g)"], "loc": "地下冷冻房", "freq": "every_week_14", "sup": "sup_metro", "cat": "肉类"}, {"zh": "培根", "de": "ARO Bacon geschn. ca.1000g · 587518.2", "units": ["KG", "包"], "loc": "地下冷冻房", "freq": "every_week_14", "sup": "sup_metro", "cat": "肉类"}, {"zh": "澳洲牛腩", "de": "Austr. CVS Rinder Flanksteak · 754645.0", "units": ["KG", "克(g)"], "loc": "地下冷冻房", "freq": "every_week_14", "sup": "sup_metro", "cat": "肉类"}, {"zh": "牛舌", "de": "R-Zunge Swiss Cut vac. · 036532.0", "units": ["KG", "克(g)"], "loc": "地下冷冻房", "freq": "every_week_14", "sup": "sup_metro", "cat": "肉类"}, {"zh": "新西兰羊腿（无骨）", "de": "NZ Lammkeule o.Kn.vac.TK · 952870.4", "units": ["KG", "个"], "loc": "地下冷冻房", "freq": "every_week_14", "sup": "sup_metro", "cat": "肉类"}, {"zh": "新西兰羊腿（带骨）", "de": "NZ Lammkeule mit Röhre TK · 004945.2", "units": ["KG", "个"], "loc": "地下冷冻房", "freq": "every_week_14", "sup": "sup_metro", "cat": "肉类"}, {"zh": "干式熟成牛小排", "de": "Dry Aged Short Ribs · 036038.8", "units": ["KG", "克(g)"], "loc": "地下冷冻房", "freq": "every_week_14", "sup": "sup_metro", "cat": "肉类"}, {"zh": "鸡大腿", "de": "MC Häh.Oberkeule o.H.o.K. · 007225.6", "units": ["KG", "克(g)"], "loc": "地下冷冻房", "freq": "every_week_14", "sup": "sup_metro", "cat": "肉类"}, {"zh": "鲈鱼", "de": "MC Wolfsbarsch AMK · 433769.7", "units": ["KG", "条"], "loc": "地下冷冻房", "freq": "every_week_14", "sup": "sup_metro", "cat": "鱼类海鲜"}, {"zh": "三文鱼柳", "de": "MC Lachsfil. Trim D Nor · 520607.3", "units": ["KG", "克(g)"], "loc": "地下冷冻房", "freq": "every_week_14", "sup": "sup_metro", "cat": "鱼类海鲜"}, {"zh": "比目鱼", "de": "MSC MC Scholle · 268263.1", "units": ["KG", "条"], "loc": "地下冷冻房", "freq": "every_week_14", "sup": "sup_metro", "cat": "鱼类海鲜"}, {"zh": "菱鲆", "de": "MC Steinbutt Zucht · 341252.5", "units": ["KG", "条"], "loc": "地下冷冻房", "freq": "every_week_14", "sup": "sup_metro", "cat": "鱼类海鲜"}, {"zh": "白虎虾", "de": "Garnele White Tiger roh 20-40 · 064390.8", "units": ["KG", "克(g)"], "loc": "地下冷冻房", "freq": "every_week_14", "sup": "sup_metro", "cat": "鱼类海鲜"}, {"zh": "黑虎虾", "de": "Black Tiger U10 · 980849.4", "units": ["KG", "克(g)"], "loc": "地下冷冻房", "freq": "every_week_14", "sup": "sup_metro", "cat": "鱼类海鲜"}, {"zh": "章鱼", "de": "Pulpo gep. · 136789.5", "units": ["KG", "个"], "loc": "地下冷冻房", "freq": "every_week_14", "sup": "sup_metro", "cat": "鱼类海鲜"}, {"zh": "海藻鱼子酱", "de": "MC Seetang Kaviarersatz · 607861.2", "units": ["瓶", "个"], "loc": "地下冷冻房", "freq": "every_week_1", "sup": "sup_metro", "cat": "鱼类海鲜"}, {"zh": "金枪鱼罐头", "de": "ARO Thunfisch Chunks Öl · 022428.7", "units": ["箱", "罐"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_metro", "cat": "鱼类海鲜"}, {"zh": "黄瓜", "de": "Gurke NL · 011981.8", "units": ["个", "KG"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "西兰花", "de": "Broccoli ES · 283546.0", "units": ["个", "KG"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "西葫芦", "de": "Zucchini ES · 326963.6", "units": ["KG", "个"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "甜椒（红）", "de": "Paprika rot NL · 299806.0", "units": ["KG", "个"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "甜椒（混合）", "de": "Bratpaprika MA · 297560.5", "units": ["KG", "个"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "胡萝卜", "de": "Möhren DE · 290697.2", "units": ["KG", "根"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "白萝卜", "de": "Weißer Rettich IT · 295520.1", "units": ["个", "KG"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "大葱", "de": "Lauchzwiebeln DE · 287253.9", "units": ["把", "KG"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "韭葱", "de": "Porree DE · 302290.2", "units": ["KG", "把"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "花椰菜", "de": "Blumenkohl DE · 283739.1", "units": ["个", "KG"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "生菜（菊苣）", "de": "Friseesalat gepackt · 296669.5", "units": ["个", "KG"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "羊羔生菜", "de": "Feldsalat · 306644.6", "units": ["包", "KG"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "大白菜", "de": "Chinakohl ES · 077513.0", "units": ["个", "KG"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "土豆", "de": "MC Spkart VWFK Div · 281599.1", "units": ["KG", "个"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "去皮大蒜", "de": "MC Knoblauch ges. · 525350.5", "units": ["KG", "克(g)"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "洋葱", "de": "Gemüsezwiebeln · 067787.2", "units": ["KG", "个"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "西红柿", "de": "Rispentomaten NL · 008404.6", "units": ["KG", "个"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "樱桃番茄", "de": "MPM Divino Chees KL.1 · 011669.9", "units": ["KG", "盒"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "香菇", "de": "Shii-Take Pilze · 116677.6", "units": ["KG", "克(g)"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "柠檬", "de": "MC Zitronen ES · 016968.0", "units": ["KG", "个"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "草莓", "de": "Erdbeeren DE · 264288.2", "units": ["KG", "盒"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "辣椒", "de": "Chili Cayenne · 296480.7", "units": ["KG", "克(g)"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "蔬菜水果"}, {"zh": "盐", "de": "ARO Tafelsalz · 131599.3", "units": ["包", "KG"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_metro", "cat": "调料香料"}, {"zh": "白胡椒粉", "de": "MC Dose Pfeffer weiß · 962988.2", "units": ["罐", "KG"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_metro", "cat": "调料香料"}, {"zh": "黑胡椒碎", "de": "MC DS Pfeffer schwarz · 963019.5", "units": ["罐", "KG"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_metro", "cat": "调料香料"}, {"zh": "蒜粒", "de": "MC Dose Knoblauchgranulat · 963723.2", "units": ["罐", "KG"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_metro", "cat": "调料香料"}, {"zh": "洋葱粒", "de": "MC Dose Zwiebelgranulat · 963274.6", "units": ["罐", "KG"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_metro", "cat": "调料香料"}, {"zh": "孜然粉", "de": "Kümmel gemahlen · 007582.0", "units": ["罐", "KG"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_metro", "cat": "调料香料"}, {"zh": "孜然粒", "de": "Kümmel ganz · 015659.6", "units": ["罐", "KG"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_metro", "cat": "调料香料"}, {"zh": "白芝麻", "de": "Sesam weiß geröstet · 065823.7", "units": ["包", "KG"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_metro", "cat": "调料香料"}, {"zh": "黑芝麻", "de": "Sesam schwarz geröstet · 065863.3", "units": ["包", "KG"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_metro", "cat": "调料香料"}, {"zh": "是拉差辣椒酱", "de": "Sriracha Hot Chili Sauce · 439064.7", "units": ["瓶", "箱"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_metro", "cat": "调料香料"}, {"zh": "米醋", "de": "MC Reisessig · 060136.9", "units": ["瓶", "箱"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_metro", "cat": "调料香料"}, {"zh": "柚子酱油", "de": "Kikkoman Ponzu Sauce · 325764.9", "units": ["瓶", "箱"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_metro", "cat": "调料香料"}, {"zh": "味噌（白）", "de": "Shinjyo Miso su hell · 655891.0", "units": ["KG", "盒"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_metro", "cat": "调料香料"}, {"zh": "炸油 10L", "de": "ARO Frittieröl 10L · 921377.8", "units": ["桶", "升(L)"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_metro", "cat": "大宗食材"}, {"zh": "蛋黄酱 10KG", "de": "ARO Salatmayonnaise 50% · 084985.1", "units": ["KG", "桶"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_metro", "cat": "大宗食材"}, {"zh": "番茄酱", "de": "Heinz Tomato Ketchup · 071786.8", "units": ["瓶", "箱"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_metro", "cat": "大宗食材"}, {"zh": "土豆粉 10KG", "de": "ARO Kartoffelmehl · 280228.8", "units": ["KG", "袋"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_metro", "cat": "大宗食材"}, {"zh": "香米 18KG", "de": "Royal Tiger Jasminreis · 061431.3", "units": ["KG", "袋"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_metro", "cat": "大宗食材"}, {"zh": "鸡粉", "de": "KN Chicken Powder Bouillon · 898380.1", "units": ["KG", "罐"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_metro", "cat": "大宗食材"}, {"zh": "全脂牛奶", "de": "H-Milch 3,5% · 863542.7", "units": ["升(L)", "箱"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "乳制品"}, {"zh": "炼乳", "de": "Dovgan Kondensmilch gez. · 458910.7", "units": ["罐", "箱"], "loc": "办公室库房", "freq": "every_2weeks", "sup": "sup_metro", "cat": "乳制品"}, {"zh": "鸡蛋（30个）", "de": "ARO 30er M braun · 349304.6", "units": ["个", "箱"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "乳制品"}, {"zh": "莫扎瑞拉丝", "de": "MC Mozzarella/Cheddar ger. · 000096.8", "units": ["KG", "包"], "loc": "蔬菜冷藏房", "freq": "every_week_14", "sup": "sup_metro", "cat": "乳制品"}, {"zh": "百香果汁", "de": "Happy Day Maracuja · 549308.5", "units": ["箱", "瓶"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_metro", "cat": "饮料糖浆"}, {"zh": "芒果汁", "de": "Happy Day Mango · 549303.6", "units": ["箱", "瓶"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_metro", "cat": "饮料糖浆"}, {"zh": "荔枝糖浆", "de": "Monin Litschi · 238787.6", "units": ["瓶", "箱"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_metro", "cat": "饮料糖浆"}, {"zh": "草莓糖浆", "de": "Rioba Strawberry Syrup · 824020.2", "units": ["瓶", "箱"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_metro", "cat": "饮料糖浆"}, {"zh": "芒果糖浆", "de": "Rioba Mango Syrup · 828982.9", "units": ["瓶", "箱"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_metro", "cat": "饮料糖浆"}, {"zh": "姜糖浆", "de": "Monin Ingwer · 498815.0", "units": ["瓶", "箱"], "loc": "办公室库房", "freq": "every_week_1", "sup": "sup_metro", "cat": "饮料糖浆"}, {"zh": "厨房纸", "de": "Bess Classic 3-LG · 134421.7", "units": ["包", "箱"], "loc": "厨房小房间", "freq": "every_2weeks", "sup": "sup_metro", "cat": "日用耗材"}, {"zh": "打包饭盒", "de": "Menuebox Bagasse 3GET · 222250.3", "units": ["包", "箱"], "loc": "厨房小房间", "freq": "every_2weeks", "sup": "sup_metro", "cat": "日用耗材"}];
+const DEFAULT_SUPPLIERS=[{"id": "sup_albers", "name": "Albers", "deadlineDay": 1, "deadlineHour": 12, "delivery": "周三", "color": "#ff3b30"}, {"id": "sup_kims", "name": "Kim's Mall", "deadlineDay": 3, "deadlineHour": 12, "delivery": "周四/五", "color": "#34c759"}, {"id": "sup_china1", "name": "中国供应商①", "deadlineDay": 1, "deadlineHour": 11, "delivery": "周四", "color": "#ff9500"}, {"id": "sup_china2", "name": "中国供应商②", "deadlineDay": 5, "deadlineHour": 11, "delivery": "-", "color": "#ff9500"}, {"id": "sup_metro", "name": "Metro", "deadlineDay": 1, "deadlineHour": 10, "delivery": "自采", "color": "#5856d6"}];
+const DEFAULT_STAFF=[{id:'s1',name:'高伟',pin:'1001',store:'both'},{id:'s2',name:'吴博',pin:'1002',store:'both'},{id:'s3',name:'肖克敏',pin:'1003',store:'both'},{id:'s4',name:'赵世斌',pin:'1004',store:'both'}];
+const REASONS=['已售罄','剩余极少','损耗/变质','其他'];
+function p2(n){return String(n).padStart(2,'0')}
+
+let items=[],suppliers=[],staffList=[],currentStaff=null,bossFlags={};
+let curStore='wetter',curView='supplier',curSupId=null;
+let pinBuf='',selStaffId=null;
+const vals={},usel={};
+const emerSel={};
+
+// SUPABASE LOAD
+async function loadAll(){
+  try{const r=await sbGet(KEYS.suppliers);suppliers=r&&r.value?JSON.parse(r.value):DEFAULT_SUPPLIERS;}catch(e){suppliers=DEFAULT_SUPPLIERS;}
+  try{const r=await sbGet(KEYS.items);items=r&&r.value?JSON.parse(r.value):DEFAULT_ITEMS;}catch(e){items=DEFAULT_ITEMS;}
+  try{const r=await sbGet(KEYS.staff);staffList=r&&r.value?JSON.parse(r.value):DEFAULT_STAFF;}catch(e){staffList=DEFAULT_STAFF;}
+  try{const r=await sbGet(KEYS.flags);bossFlags=r&&r.value?JSON.parse(r.value):{};}catch(e){}
+}
+
+async function logAction(action,detail){
+  if(!currentStaff)return;
+  try{const r=await sbGet(KEYS.log);const logs=r&&r.value?JSON.parse(r.value):[];logs.unshift({staffId:currentStaff.id,staffName:currentStaff.name,store:curStore,action,detail,time:Date.now(),timeStr:new Date().toLocaleString('zh-CN')});if(logs.length>200)logs.splice(200);await sbSet(KEYS.log,JSON.stringify(logs));}catch(e){}
+}
+
+async function saveInv(store,supId,data){
+  await sbSet('kochi_inv_'+store+'_'+supId,JSON.stringify({ts:Date.now(),data}));
+}
+
+// CLOCK
+function tickClock(){
+  const n=new Date();
+  document.getElementById('clk').textContent=p2(n.getHours())+':'+p2(n.getMinutes())+':'+p2(n.getSeconds());
+  document.getElementById('clk-date').textContent=n.getFullYear()+'年'+MM[n.getMonth()]+n.getDate()+'日 '+WDF[n.getDay()];
+  renderCountdowns();renderTasks();
+}
+
+// COUNTDOWNS
+function nextDL(sup){
+  const now=new Date(),nx=new Date(now);
+  const day=sup.deadlineDay||1,hour=sup.deadlineHour||12;
+  let diff=(day-now.getDay()+7)%7;
+  if(diff===0){const c=new Date(now);c.setHours(hour,0,0,0);if(now>=c)diff=7;}
+  nx.setDate(now.getDate()+diff);nx.setHours(hour,0,0,0);return nx;
+}
+function fmtMs(ms){if(ms<=0)return'已过期';const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000),s=Math.floor((ms%60000)/1000);if(h>48)return Math.floor(h/24)+'天'+h%24+'h';if(h>0)return h+'h'+p2(m)+'m';return p2(m)+'m'+p2(s)+'s';}
+function renderCountdowns(){
+  const strip=document.getElementById('cd-strip');if(!strip)return;strip.innerHTML='';
+  suppliers.forEach(sup=>{
+    const nx=nextDL(sup),ms=nx-new Date(),hrs=ms/3600000;
+    const cls=hrs<6?'red':hrs<24?'orange':'green';
+    const d=document.createElement('div');d.className='cd-card';
+    d.innerHTML='<div class="cd-name">'+sup.name+'</div><div class="cd-dl">'+WD[sup.deadlineDay||1]+' '+p2(sup.deadlineHour||12)+':00</div><div class="cd-ct '+cls+'">'+fmtMs(ms)+'</div>';
+    strip.appendChild(d);
+  });
+}
+
+// TODAY TASKS
+function renderTasks(){
+  const now=new Date(),wd=now.getDay(),hr=now.getHours();
+  const chips=document.getElementById('chips');chips.innerHTML='';
+  const tasks=[];
+  suppliers.forEach(sup=>{
+    const dl=sup.deadlineDay||1,dlh=sup.deadlineHour||12;
+    const prevDay=(dl-1+7)%7;
+    if((wd===prevDay&&hr>=22)||(wd===dl&&hr<dlh)){
+      const urgent=wd===dl&&hr<dlh;
+      tasks.push({t:(urgent?'⚠️ ':'')+'盘点 '+sup.name,c:urgent?'urgent':'warn',supId:sup.id});
+    }
+  });
+  if(!tasks.length)tasks.push({t:'今日暂无紧急任务',c:'muted'});
+  tasks.forEach(t=>{
+    const c=document.createElement('div');c.className='chip '+t.c;c.textContent=t.t;
+    if(t.supId){c.addEventListener('click',()=>switchSupplier(t.supId));c.addEventListener('touchend',e=>{e.preventDefault();switchSupplier(t.supId);});}
+    chips.appendChild(c);
+  });
+  // banner
+  const ba=document.getElementById('banner-area');ba.innerHTML='';
+  const urgentSups=suppliers.filter(sup=>{const dl=sup.deadlineDay||1,dlh=sup.deadlineHour||12,prevDay=(dl-1+7)%7;return(wd===prevDay&&hr>=22)||(wd===dl&&hr<dlh);});
+  if(urgentSups.length){
+    const b=document.createElement('div');b.className='banner show urgent';
+    b.innerHTML='<div class="banner-ttl">⚠️ 紧急提醒</div>'+urgentSups.map(s=>s.name+' 截单临近').join(' · ');
+    ba.appendChild(b);
+  }
+}
+
+// TABS - dynamic from suppliers
+function renderTabs(){
+  const tabs=document.getElementById('tabs');tabs.innerHTML='';
+  suppliers.forEach((sup,i)=>{
+    const btn=document.createElement('button');btn.type='button';btn.className='tab'+(i===0?' active':'');
+    btn.dataset.supId=sup.id;
+    btn.innerHTML=sup.name+'<span class="tab-sub">截单'+WD[sup.deadlineDay||1]+p2(sup.deadlineHour||12)+':00</span>';
+    tabs.appendChild(btn);
+  });
+  if(!curSupId&&suppliers.length)curSupId=suppliers[0].id;
+  tabs.addEventListener('click',e=>{const t=e.target.closest('.tab');if(!t)return;switchSupplier(t.dataset.supId);});
+  tabs.addEventListener('touchend',e=>{const t=e.target.closest('.tab');if(!t)return;e.preventDefault();switchSupplier(t.dataset.supId);});
+}
+
+function switchSupplier(supId){
+  curSupId=supId;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.supId===supId));
+  renderList();
+}
+
+// FREQ CHECK
+function shouldShow(item){
+  const fk=item.sup+'|'+item.zh;
+  if(bossFlags[fk])return true;
+  const freq=item.freq||'every_week_14';
+  const now=new Date(),wd=now.getDay();
+  if(freq==='every_day')return true;
+  if(freq==='every_2days')return true; // simplified
+  if(freq==='every_3days')return true; // simplified
+  if(freq==='every_week_1')return wd===1;
+  if(freq==='every_week_14')return wd===1||wd===4;
+  if(freq==='every_2weeks'){const weekNum=Math.floor(now.getTime()/(7*24*3600*1000));return wd===1&&weekNum%2===0;}
+  return true;
+}
+
+// RENDER LIST
+function renderList(){
+  const list=document.getElementById('list');list.innerHTML='';
+  let totalShown=0,done=0;
+
+  if(curView==='location'){
+    const byLoc={};
+    items.forEach(item=>{
+      if(!shouldShow(item))return;
+      const loc=item.loc||'办公室库房';
+      if(!byLoc[loc])byLoc[loc]=[];
+      byLoc[loc].push(item);
+    });
+    LOC_ORDER.forEach(loc=>{
+      const its=byLoc[loc];if(!its||!its.length)return;
+      const hdr=document.createElement('div');hdr.className='sec-hdr';
+      hdr.innerHTML='<span class="loc-dot" style="background:'+(LOC_COLORS[loc]||'#8e8e93')+'"></span>'+loc+' <span style="color:#c7c7cc;font-size:10px">('+its.length+')</span>';
+      list.appendChild(hdr);
+      its.forEach(item=>{totalShown++;const k=curStore+'|'+item.sup+'|'+item.zh;if((vals[k]||'')!=='')done++;appendCard(list,item,k);});
+    });
+  } else if(curView==='all'){
+    // Group by supplier
+    suppliers.forEach(sup=>{
+      const its=items.filter(i=>i.sup===sup.id);
+      if(!its.length)return;
+      // Group by cat
+      const byCat={};
+      its.forEach(i=>{if(!byCat[i.cat])byCat[i.cat]=[];byCat[i.cat].push(i);});
+      Object.keys(byCat).forEach(cat=>{
+        const hdr=document.createElement('div');hdr.className='sec-hdr';hdr.textContent=sup.name+' · '+cat;list.appendChild(hdr);
+        byCat[cat].forEach(item=>{totalShown++;const k=curStore+'|'+item.sup+'|'+item.zh;if((vals[k]||'')!=='')done++;appendCard(list,item,k);});
+      });
+    });
+  } else {
+    // By supplier tab
+    const supItems=items.filter(i=>i.sup===curSupId);
+    const byCat={};
+    supItems.forEach(i=>{if(!shouldShow(i))return;if(!byCat[i.cat])byCat[i.cat]=[];byCat[i.cat].push(i);});
+    Object.keys(byCat).forEach(cat=>{
+      const its=byCat[cat];
+      const hdr=document.createElement('div');hdr.className='sec-hdr';
+      const loc=its[0]&&its[0].loc?its[0].loc:'';
+      hdr.innerHTML=(loc?'<span class="loc-dot" style="background:'+(LOC_COLORS[loc]||'#8e8e93')+'"></span>':'')+cat;
+      list.appendChild(hdr);
+      its.forEach(item=>{totalShown++;const k=curStore+'|'+item.sup+'|'+item.zh;if((vals[k]||'')!=='')done++;appendCard(list,item,k);});
+    });
+  }
+
+  document.getElementById('s-total').textContent=totalShown;
+  document.getElementById('s-done').textContent=done;
+  const pct=totalShown>0?Math.round(done/totalShown*100):0;
+  document.getElementById('s-pct').textContent=pct+'%';
+  document.getElementById('prog').style.width=pct+'%';
+  bindItemEvents();
+}
+
+function appendCard(list,item,key){
+  const units=item.units||['KG'];
+  if(!usel[key])usel[key]=units[0];
+  const val=vals[key]||'';
+  const isBossFlag=bossFlags[item.sup+'|'+item.zh];
+  const bossTag=isBossFlag?'<span class="boss-tag">老板要求</span>':'';
+  const card=document.createElement('div');card.className='item-card'+(val!==''?' done':'');
+  // Unit selector: dropdown if multiple units, otherwise plain text
+  const unitCtrl=units.length>1
+    ?'<select class="unit-sel'+(val!==''?' filled':'')+'" data-key="'+key+'">'+units.map(u=>'<option'+(u===usel[key]?' selected':'')+'>'+u+'</option>').join('')+'</select>'
+    :'<span style="font-size:12px;color:#8e8e93">'+units[0]+'</span>';
+  card.innerHTML=
+    '<div class="chk'+(val!==''?' on':'')+'" id="c'+key.replace(/[|]/g,'_')+'"></div>'+
+    '<div class="item-info"><div class="item-zh">'+item.zh+bossTag+'</div><div class="item-de">'+item.de+'</div></div>'+
+    '<div class="qty-wrap"><input class="qty-inp'+(val!==''?' filled':'')+'" type="number" min="0" step="0.01" inputmode="decimal" placeholder="数量" value="'+val+'" data-key="'+key+'">'+unitCtrl+'</div>';
+  list.appendChild(card);
+}
+
+function bindItemEvents(){
+  const list=document.getElementById('list');
+  list.querySelectorAll('.qty-inp').forEach(inp=>{
+    inp.addEventListener('input',()=>{
+      const k=inp.dataset.key;vals[k]=inp.value.trim();
+      const card=inp.closest('.item-card');
+      const chk=document.getElementById('c'+k.replace(/[|]/g,'_'));
+      const has=vals[k]!=='';
+      card.classList.toggle('done',has);inp.classList.toggle('filled',has);
+      if(chk)chk.classList.toggle('on',has);
+      // also update unit selector color
+      const usel_el=card.querySelector('.unit-sel');
+      if(usel_el)usel_el.classList.toggle('filled',has);
+      updateStats();
+    });
+  });
+  list.querySelectorAll('.unit-sel').forEach(sel=>{
+    sel.addEventListener('change',()=>{usel[sel.dataset.key]=sel.value;});
+  });
+}
+
+function updateStats(){
+  let total=0,done=0;
+  document.getElementById('list').querySelectorAll('.qty-inp').forEach(inp=>{total++;if((vals[inp.dataset.key]||'')!=='')done++;});
+  document.getElementById('s-total').textContent=total;
+  document.getElementById('s-done').textContent=done;
+  const pct=total>0?Math.round(done/total*100):0;
+  document.getElementById('s-pct').textContent=pct+'%';
+  document.getElementById('prog').style.width=pct+'%';
+}
+
+// LOGIN
+function renderStaffList(){
+  const el=document.getElementById('staff-list');el.innerHTML='';
+  staffList.forEach(s=>{
+    const btn=document.createElement('button');btn.type='button';btn.className='staff-btn';
+    btn.innerHTML=s.name+'<span style="color:#ffffff44">›</span>';
+    const fn=()=>selectStaff(s.id);
+    btn.addEventListener('click',fn);btn.addEventListener('touchend',e=>{e.preventDefault();fn();});
+    el.appendChild(btn);
+  });
+}
+function selectStaff(id){
+  selStaffId=id;pinBuf='';updatePinDots();
+  const s=staffList.find(x=>x.id===id);if(!s)return;
+  document.getElementById('pin-greet').textContent='你好，'+s.name+'！';
+  document.getElementById('lo-step1').style.display='none';
+  document.getElementById('lo-step2').style.display='block';
+  document.getElementById('pin-err').textContent='';
+}
+function updatePinDots(){for(let i=0;i<4;i++)document.getElementById('pd'+i).classList.toggle('on',i<pinBuf.length);}
+async function checkPin(){
+  const s=staffList.find(x=>x.id===selStaffId);if(!s)return;
+  if(pinBuf===s.pin){
+    currentStaff=s;
+    document.getElementById('lo').style.display='none';
+    document.getElementById('user-name').textContent=s.name;
+    document.getElementById('logout-btn').style.display='inline-block';
+    await logAction('登录','员工登录系统');
+    renderList();renderTasks();
+  }else{
+    document.getElementById('pin-err').textContent='PIN码错误，请重试';
+    pinBuf='';updatePinDots();
+  }
+}
+document.querySelectorAll('.pp[data-n]').forEach(btn=>{
+  const fn=()=>{if(pinBuf.length>=4)return;pinBuf+=btn.dataset.n;updatePinDots();if(pinBuf.length===4)setTimeout(checkPin,150);};
+  btn.addEventListener('click',fn);btn.addEventListener('touchend',e=>{e.preventDefault();fn();});
+});
+document.getElementById('pin-del').addEventListener('click',()=>{pinBuf=pinBuf.slice(0,-1);updatePinDots();document.getElementById('pin-err').textContent='';});
+document.getElementById('pin-del').addEventListener('touchend',e=>{e.preventDefault();pinBuf=pinBuf.slice(0,-1);updatePinDots();});
+document.getElementById('lo-back').addEventListener('click',()=>{document.getElementById('lo-step1').style.display='block';document.getElementById('lo-step2').style.display='none';selStaffId=null;pinBuf='';});
+document.getElementById('lo-back').addEventListener('touchend',e=>{e.preventDefault();document.getElementById('lo-back').click();});
+document.getElementById('logout-btn').addEventListener('click',()=>{
+  currentStaff=null;selStaffId=null;pinBuf='';
+  document.getElementById('lo').style.display='flex';
+  document.getElementById('lo-step1').style.display='block';
+  document.getElementById('lo-step2').style.display='none';
+  document.getElementById('user-name').textContent='';
+  document.getElementById('logout-btn').style.display='none';
+  renderStaffList();
+});
+document.getElementById('logout-btn').addEventListener('touchend',e=>{e.preventDefault();document.getElementById('logout-btn').click();});
+
+// STORE
+document.getElementById('btn-wetter').addEventListener('click',()=>{curStore='wetter';document.getElementById('btn-wetter').classList.add('active');document.getElementById('btn-bismarck').classList.remove('active');renderList();});
+document.getElementById('btn-bismarck').addEventListener('click',()=>{curStore='bismarck';document.getElementById('btn-bismarck').classList.add('active');document.getElementById('btn-wetter').classList.remove('active');renderList();});
+document.getElementById('btn-wetter').addEventListener('touchend',e=>{e.preventDefault();document.getElementById('btn-wetter').click();});
+document.getElementById('btn-bismarck').addEventListener('touchend',e=>{e.preventDefault();document.getElementById('btn-bismarck').click();});
+
+// VIEW TOGGLE
+document.getElementById('view-toggle').addEventListener('click',e=>{
+  const b=e.target.closest('.vt-btn');if(!b)return;
+  curView=b.dataset.view;
+  document.querySelectorAll('.vt-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+  document.getElementById('tabs-wrap').style.display=curView==='supplier'?'block':'none';
+  renderList();
+});
+document.getElementById('view-toggle').addEventListener('touchend',e=>{
+  const b=e.target.closest('.vt-btn');if(!b)return;e.preventDefault();b.click();
+});
+
+// SUBMIT
+document.getElementById('submit-btn').addEventListener('click',async()=>{
+  const btn=document.getElementById('submit-btn');
+  const filledKeys=Object.keys(vals).filter(k=>k.startsWith(curStore+'|')&&vals[k]!=='');
+  if(!filledKeys.length){showToast('请先填写库存数量');return;}
+  btn.textContent='保存中...';
+  const supId=curSupId;
+  const sup=suppliers.find(s=>s.id===supId);
+  const supName=sup?sup.name:supId;
+  const supItems=items.filter(i=>i.sup===supId);
+  const byCat={};
+  supItems.forEach(i=>{if(!byCat[i.cat])byCat[i.cat]=[];byCat[i.cat].push(i);});
+  const data=[];
+  let lines=['【Kochi 库存盘点报告】','门店：'+(curStore==='wetter'?'Kochi Wetter':'Kochi Bismarck'),'供应商：'+supName,'日期：'+new Date().toLocaleString('zh-CN'),''];
+  Object.keys(byCat).forEach(cat=>{
+    lines.push('▸ '+cat);
+    const catItems=[];
+    byCat[cat].forEach(item=>{
+      const k=curStore+'|'+item.sup+'|'+item.zh;
+      const v=vals[k]||'',u=usel[k]||item.units[0];
+      if(v)lines.push('  '+item.zh+': '+v+' '+u);
+      catItems.push({zh:item.zh,val:v,unit:u});
+    });
+    data.push({cat,items:catItems});
+    lines.push('');
+  });
+  await saveInv(curStore,supId,data);
+  // Clear boss flags
+  let changed=false;
+  supItems.forEach(item=>{const fk=item.sup+'|'+item.zh;if(bossFlags[fk]){delete bossFlags[fk];changed=true;}});
+  if(changed)await sbSet(KEYS.flags,JSON.stringify(bossFlags));
+  await logAction('盘点提交','供应商：'+supName);
+  btn.textContent='✓ 提交盘点结果';
+  document.getElementById('result-box').textContent=lines.join('\n');
+  document.getElementById('result-panel').classList.add('show');
+  document.getElementById('result-panel').scrollIntoView({behavior:'smooth'});
+  showToast('数据已同步到老板端');
+});
+document.getElementById('copy-btn').addEventListener('click',()=>{
+  const txt=document.getElementById('result-box').textContent;
+  if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>showToast('已复制'));
+  else{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('已复制');}
+});
+
+// EMERGENCY
+document.getElementById('emer-search').addEventListener('input',e=>renderEmerSearch(e.target.value.trim()));
+document.getElementById('emer-open').addEventListener('click',()=>{document.getElementById('emer-result').classList.remove('show');document.getElementById('emer-submit').disabled=Object.keys(emerSel).length===0;document.getElementById('emer-page').classList.add('show');});
+document.getElementById('emer-open').addEventListener('touchend',e=>{e.preventDefault();document.getElementById('emer-open').click();});
+document.getElementById('emer-back').addEventListener('click',()=>document.getElementById('emer-page').classList.remove('show'));
+document.getElementById('emer-back').addEventListener('touchend',e=>{e.preventDefault();document.getElementById('emer-page').classList.remove('show');});
+
+function renderEmerSearch(q){
+  const el=document.getElementById('emer-items-list');
+  if(!q){el.innerHTML='<div class="emer-empty-txt">输入关键词搜索品项</div>';return;}
+  const hits=items.filter(i=>i.zh.includes(q)||i.de.toLowerCase().includes(q.toLowerCase())).slice(0,15);
+  if(!hits.length){el.innerHTML='<div class="emer-empty-txt">未找到</div>';return;}
+  el.innerHTML='';
+  hits.forEach(item=>{
+    const k=item.zh+'|'+item.sup;
+    const d=document.createElement('div');d.className='emer-item'+(emerSel[k]?' selected':'');
+    const sup=suppliers.find(s=>s.id===item.sup);
+    d.innerHTML='<div><div class="emer-item-zh">'+item.zh+'</div><div class="emer-item-de">'+item.de+'</div></div><span class="emer-item-sup">'+(sup?sup.name:item.sup)+'</span>';
+    const fn=()=>{if(!emerSel[k])emerSel[k]={zh:item.zh,de:item.de,sup:item.sup,reason:REASONS[0],note:''};renderEmerSelected();renderEmerSearch(document.getElementById('emer-search').value);};
+    d.addEventListener('click',fn);d.addEventListener('touchend',e=>{e.preventDefault();fn();});
+    el.appendChild(d);
+  });
+}
+
+function renderEmerSelected(){
+  const wrap=document.getElementById('sel-items');
+  const sec=document.getElementById('emer-sel-sec');
+  const keys=Object.keys(emerSel);
+  sec.style.display=keys.length?'block':'none';
+  document.getElementById('emer-submit').disabled=keys.length===0;
+  wrap.innerHTML='';
+  keys.forEach(k=>{
+    const item=emerSel[k];
+    const card=document.createElement('div');card.className='sel-card';
+    card.innerHTML='<div class="sel-top"><div class="sel-zh">'+item.zh+'</div><button type="button" class="sel-remove" data-key="'+k+'">移除</button></div>'+
+      '<div class="sel-row"><span class="sel-lbl">原因</span><select class="sel-reason" data-key="'+k+'">'+REASONS.map(r=>'<option'+(item.reason===r?' selected':'')+'>'+r+'</option>').join('')+'</select></div>'+
+      '<textarea class="sel-note" data-key="'+k+'" placeholder="补充说明（可选）" rows="2">'+item.note+'</textarea>';
+    wrap.appendChild(card);
+  });
+  wrap.querySelectorAll('.sel-remove').forEach(b=>{
+    const fn=()=>{delete emerSel[b.dataset.key];renderEmerSelected();renderEmerSearch(document.getElementById('emer-search').value);};
+    b.addEventListener('click',fn);b.addEventListener('touchend',e=>{e.preventDefault();fn();});
+  });
+  wrap.querySelectorAll('.sel-reason').forEach(s=>{s.addEventListener('change',()=>{emerSel[s.dataset.key].reason=s.value;});});
+  wrap.querySelectorAll('.sel-note').forEach(t=>{t.addEventListener('input',()=>{emerSel[t.dataset.key].note=t.value;});});
+}
+
+document.getElementById('emer-submit').addEventListener('click',async()=>{
+  const keys=Object.keys(emerSel);if(!keys.length)return;
+  const store=curStore==='wetter'?'Kochi Wetter':'Kochi Bismarck';
+  const now=new Date(),timeStr=now.toLocaleString('zh-CN');
+  const its=keys.map(k=>emerSel[k]);
+  try{const r=await sbGet(KEYS.emer);const list=r&&r.value?JSON.parse(r.value):[];list.unshift({store,time:now.getTime(),timeStr,items:its});if(list.length>50)list.splice(50);await sbSet(KEYS.emer,JSON.stringify(list));}catch(e){}
+  await logAction('告急上报','上报'+its.length+'个品项');
+  const lines=['🚨【库存告急通知】','门店：'+store,'时间：'+timeStr,''];
+  its.forEach((it,i)=>{lines.push((i+1)+'. '+it.zh);lines.push('   原因：'+it.reason);if(it.note)lines.push('   备注：'+it.note);});
+  lines.push('');lines.push('请老板尽快安排补货！');
+  document.getElementById('emer-result-box').textContent=lines.join('\n');
+  document.getElementById('emer-result').classList.add('show');
+  document.getElementById('emer-submit').disabled=true;
+  document.getElementById('emer-submit').textContent='✅ 已上报';
+});
+document.getElementById('emer-copy').addEventListener('click',()=>{
+  const txt=document.getElementById('emer-result-box').textContent;
+  if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>showToast('已复制'));
+  else{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('已复制');}
+});
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// INIT
+(async()=>{
+  await loadAll();
+  renderStaffList();
+  renderTabs();
+  setInterval(tickClock,1000);tickClock();
+})();
+</script>
+</body>
+</html>
