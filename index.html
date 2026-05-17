@@ -133,6 +133,7 @@ button{-webkit-appearance:none;touch-action:manipulation}
 .item-zh{font-size:15px;font-weight:600;color:#1c1c1e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .item-de{font-size:11px;color:#8e8e93;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
 .boss-tag{display:inline-block;background:#fff8ee;color:#a05000;border:1px solid #ffd8a0;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;margin-left:5px}
+.today-tag{display:inline-block;background:#edfbf1;color:#1c7c3e;border:1px solid #a8e6c0;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;margin-left:5px}
 .qty-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
 .qty-inp{width:70px;text-align:center;font-size:16px!important;font-weight:600;color:#1c1c1e;padding:6px;border:1.5px solid #d1d1d6;border-radius:10px;background:#f2f2f7;touch-action:manipulation}
 .qty-inp:focus{outline:none;border-color:#5856d6;background:#eeeeff}
@@ -352,17 +353,22 @@ function switchSupplier(supId){
 
 // FREQ CHECK
 function shouldShow(item){
+  // Used only for today's task chips - always show items in list
   const fk=item.sup+'|'+item.zh;
   if(bossFlags[fk])return true;
   const freq=item.freq||'every_week_14';
   const now=new Date(),wd=now.getDay();
   if(freq==='every_day')return true;
-  if(freq==='every_2days')return true; // simplified
-  if(freq==='every_3days')return true; // simplified
+  if(freq==='every_2days')return true;
+  if(freq==='every_3days')return true;
   if(freq==='every_week_1')return wd===1;
   if(freq==='every_week_14')return wd===1||wd===4;
   if(freq==='every_2weeks'){const weekNum=Math.floor(now.getTime()/(7*24*3600*1000));return wd===1&&weekNum%2===0;}
   return true;
+}
+
+function isDueToday(item){
+  return shouldShow(item);
 }
 
 // RENDER LIST
@@ -373,7 +379,6 @@ function renderList(){
   if(curView==='location'){
     const byLoc={};
     items.forEach(item=>{
-      if(!shouldShow(item))return;
       const loc=item.loc||'办公室库房';
       if(!byLoc[loc])byLoc[loc]=[];
       byLoc[loc].push(item);
@@ -402,7 +407,7 @@ function renderList(){
     // By supplier tab
     const supItems=items.filter(i=>i.sup===curSupId);
     const byCat={};
-    supItems.forEach(i=>{if(!shouldShow(i))return;if(!byCat[i.cat])byCat[i.cat]=[];byCat[i.cat].push(i);});
+    supItems.forEach(i=>{if(!byCat[i.cat])byCat[i.cat]=[];byCat[i.cat].push(i);});
     Object.keys(byCat).forEach(cat=>{
       const its=byCat[cat];
       const hdr=document.createElement('div');hdr.className='sec-hdr';
@@ -427,6 +432,7 @@ function appendCard(list,item,key){
   const val=vals[key]||'';
   const isBossFlag=bossFlags[item.sup+'|'+item.zh];
   const bossTag=isBossFlag?'<span class="boss-tag">老板要求</span>':'';
+  const todayTag=isDueToday(item)&&!isBossFlag?'<span class="today-tag">今日</span>':'';
   const card=document.createElement('div');card.className='item-card'+(val!==''?' done':'');
   // Unit selector: dropdown if multiple units, otherwise plain text
   const unitCtrl=units.length>1
@@ -434,7 +440,7 @@ function appendCard(list,item,key){
     :'<span style="font-size:12px;color:#8e8e93">'+units[0]+'</span>';
   card.innerHTML=
     '<div class="chk'+(val!==''?' on':'')+'" id="c'+key.replace(/[|]/g,'_')+'"></div>'+
-    '<div class="item-info"><div class="item-zh">'+item.zh+bossTag+'</div><div class="item-de">'+item.de+'</div></div>'+
+    '<div class="item-info"><div class="item-zh">'+item.zh+bossTag+todayTag+'</div><div class="item-de">'+item.de+'</div></div>'+
     '<div class="qty-wrap"><input class="qty-inp'+(val!==''?' filled':'')+'" type="number" min="0" step="0.01" inputmode="decimal" placeholder="数量" value="'+val+'" data-key="'+key+'">'+unitCtrl+'</div>';
   list.appendChild(card);
 }
