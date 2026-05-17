@@ -260,7 +260,17 @@ const emerSel={};
 // SUPABASE LOAD
 async function loadAll(){
   try{const r=await sbGet(KEYS.suppliers);suppliers=r&&r.value?JSON.parse(r.value):DEFAULT_SUPPLIERS;}catch(e){suppliers=DEFAULT_SUPPLIERS;}
-  try{const r=await sbGet(KEYS.items);items=r&&r.value?JSON.parse(r.value):DEFAULT_ITEMS;}catch(e){items=DEFAULT_ITEMS;}
+  try{
+    const r=await sbGet(KEYS.items);
+    if(r&&r.value){
+      const loaded=JSON.parse(r.value);
+      items=Array.isArray(loaded)?loaded:DEFAULT_ITEMS;
+    } else {
+      items=DEFAULT_ITEMS;
+      // First run: save default items to Supabase
+      await sbSet(KEYS.items,JSON.stringify(DEFAULT_ITEMS));
+    }
+  }catch(e){items=DEFAULT_ITEMS;}
   try{const r=await sbGet(KEYS.staff);staffList=r&&r.value?JSON.parse(r.value):DEFAULT_STAFF;}catch(e){staffList=DEFAULT_STAFF;}
   try{const r=await sbGet(KEYS.flags);bossFlags=r&&r.value?JSON.parse(r.value):{};}catch(e){}
 }
@@ -341,6 +351,8 @@ function renderTabs(){
     tabs.appendChild(btn);
   });
   if(!curSupId&&suppliers.length)curSupId=suppliers[0].id;
+  // mark active tab
+  tabs.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.supId===curSupId));
   tabs.addEventListener('click',e=>{const t=e.target.closest('.tab');if(!t)return;switchSupplier(t.dataset.supId);});
   tabs.addEventListener('touchend',e=>{const t=e.target.closest('.tab');if(!t)return;e.preventDefault();switchSupplier(t.dataset.supId);});
 }
@@ -666,6 +678,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
   await loadAll();
   renderStaffList();
   renderTabs();
+  if(curSupId)renderList();
   setInterval(tickClock,1000);tickClock();
 })();
 </script>
